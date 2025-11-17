@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "nios2_ctrl_reg_macros.h": "c"
+    }
+}
