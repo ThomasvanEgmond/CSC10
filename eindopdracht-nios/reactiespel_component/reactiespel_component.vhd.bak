@@ -1,0 +1,38 @@
+-- altera vhdl_input_version vhdl_2008
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+
+entity reg32_reaction_game is
+	port (
+		clock, resetn : in std_logic;
+		KEY			  : in std_logic;
+		read, write, chipselect : in std_logic;
+		address : in std_logic_vector(1 downto 0);
+		readdata : out std_logic_vector(31 downto 0);
+		writedata : in std_logic_vector(31 downto 0);
+		byteenable: in std_logic_vector(3 downto 0);
+		Q_export : out std_logic_vector(13 downto 0)
+	);
+end reg32_reaction_game;
+
+architecture rtl of reg32_reaction_game is
+	signal reg_game_ctrl		:	std_logic_vector(31 downto 0);
+	signal reg_game_speed	:	std_logic_vector(31 downto 0);
+	
+begin
+	-- WRITE
+	process(clock, resetn)
+	begin
+		if resetn = '0' then
+			reg_game_ctrl 	<= (others => '0');
+			reg_speed 		<= (others => '0');
+		elsif rising_edge(clock) then
+			if chipselect = '1' and write = '1'
+				case address is
+					when "00" 	=> reg_game_ctrl 	<=	writedata;
+					when "01" 	=> reg_speed		<= writedata;
+					when others => null;
+					
+	end process;
+end architecture rtl;
