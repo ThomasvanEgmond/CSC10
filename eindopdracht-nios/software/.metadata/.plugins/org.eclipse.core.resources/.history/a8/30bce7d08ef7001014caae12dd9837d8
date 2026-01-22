@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <stddef.h>      // For NULL
+#include <system.h>
+#include <io.h>
+#include <alt_types.h>   // Altera standard types
+#include <sys/alt_irq.h>
+#include <altera_avalon_pio_regs.h>
+#include "includes.h"
+
+// Task settings
+#define TASK_STACKSIZE      1024
+#define TASK_IO_TEST_PRIO      1
+#define TASK_BUTTON_TEST_PRIO  2
+
+// Register offsets
+#define OFFSET_CTRL   0
+#define OFFSET_SPEED  4
+#define OFFSET_STATUS 8
+
+// Stacks and Events
+OS_STK    io_testTaskStk[TASK_STACKSIZE];
+OS_STK    button_testTaskStk[TASK_STACKSIZE];
+OS_EVENT *ButtonSem;
+
+volatile int edge_capture;
+
+// ISR - MUST be declared before main or have a prototype
+void button_isr(void* context) {
+    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE, 0x0);
+    OSSemPost(ButtonSem);
+}
+
+void button_task(void *pdata) {
+    INT8U err;
+    while (1) {
+        OSSemPend(ButtonSem, 0, &err);
+        printf("Button Pressed! Edge: 0x%X\n", edge_capture);
+
+        unsigned int status = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+        // Extracting current_pos (bits 25 downto 16)
+        printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
+    }
+}
+
+void io_test(void* pdata) {
+    printf("Testing all IO's\n");
+    // Start with a known state
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, 0x1);
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, 25000000);
+
+    while (1) {
+        unsigned int ctrl_val   = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+        unsigned int status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+
+        printf("CTRL: 0x%08X | Status: 0x%08X\n", ctrl_val, status_val);
+        OSTimeDlyHMSM(0, 0, 1, 0); // 1 second heart beat
+    }
+}
+
+int main(void) {
+    ButtonSem = OSSemCreate(0);
+
+    // PIO Setup
+    IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_0_BASE, 0xf);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE, 0x0);
+
+    // Register ISR
+    alt_ic_isr_register(PIO_0_IRQ_INTERRUPT_CONTROLLER_ID, PIO_0_IRQ, button_isr, NULL, 0);
+
+    OSTaskCreateExt(io_test, NULL, &io_testTaskStk[TASK_STACKSIZE-1], TASK_IO_TEST_PRIO, TASK_IO_TEST_PRIO, io_testTaskStk, TASK_STACKSIZE, NULL, 0);
+    OSTaskCreateExt(button_task, NULL, &button_testTaskStk[TASK_STACKSIZE-1], TASK_BUTTON_TEST_PRIO, TASK_BUTTON_TEST_PRIO, button_testTaskStk, TASK_STACKSIZE, NULL, 0);
+
+    OSStart();
+    return 0;
+}

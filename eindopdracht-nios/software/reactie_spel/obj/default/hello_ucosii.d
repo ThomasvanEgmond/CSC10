@@ -13,7 +13,9 @@ obj/default/hello_ucosii.o: hello_ucosii.c ../reactie_spel_bsp/system.h \
  ../reactie_spel_bsp//HAL/inc/sys/alt_llist.h \
  ../reactie_spel_bsp//HAL/inc/priv/alt_alarm.h \
  ../reactie_spel_bsp//UCOSII/inc/ucos_ii.h \
- ../reactie_spel_bsp//HAL/inc/os_cpu.h
+ ../reactie_spel_bsp//HAL/inc/os_cpu.h \
+ ../reactie_spel_bsp//HAL/inc/sys/alt_irq.h \
+ ../reactie_spel_bsp//drivers/inc/altera_avalon_pio_regs.h
 
 ../reactie_spel_bsp/system.h:
 
@@ -46,3 +48,7 @@ obj/default/hello_ucosii.o: hello_ucosii.c ../reactie_spel_bsp/system.h \
 ../reactie_spel_bsp//UCOSII/inc/ucos_ii.h:
 
 ../reactie_spel_bsp//HAL/inc/os_cpu.h:
+
+../reactie_spel_bsp//HAL/inc/sys/alt_irq.h:
+
+../reactie_spel_bsp//drivers/inc/altera_avalon_pio_regs.h:

@@ -1,6 +1,6 @@
-18:11:03 **** Incremental Build of configuration Nios II for project reactie_spel_bsp ****
-make all 
-[BSP build complete]
+13:48:03 **** Clean-only build of configuration Nios II for project reactie_spel_bsp ****
+make clean 
+[BSP clean complete]
 
-18:11:04 Build Finished (took 866ms)
+13:48:03 Build Finished (took 266ms)
 

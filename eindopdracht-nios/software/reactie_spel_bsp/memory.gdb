@@ -3,7 +3,7 @@
 # Machine generated for CPU 'nios2_qsys_0' in SOPC Builder design 'reactiespel_system'
 # SOPC Builder design path: ../../reactiespel_system.sopcinfo
 #
-# Generated: Wed Jan 21 13:32:45 CET 2026
+# Generated: Thu Jan 22 12:52:30 CET 2026
 
 # DO NOT MODIFY THIS FILE
 #
@@ -47,4 +47,4 @@
 # by allowing GDB to cache memory contents on the host.
 
 # onchip_memory2_0
-memory 0x20000 0x40000 cache
+memory 0x40000 0x60000 cache

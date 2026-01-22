@@ -8,11 +8,11 @@ use IEEE.numeric_std.all;
 
 entity reactiespel_system is
 	port (
-		clk_clk         : in  std_logic                     := '0';             --     clk.clk
-		conduit_leds    : out std_logic_vector(9 downto 0);                     -- conduit.leds
-		conduit_buttons : in  std_logic_vector(3 downto 0)  := (others => '0'); --        .buttons
-		hex_readdata    : out std_logic_vector(41 downto 0);                    --     hex.readdata
-		reset_reset_n   : in  std_logic                     := '0'              --   reset.reset_n
+		buttons_export : in  std_logic_vector(2 downto 0)  := (others => '0'); -- buttons.export
+		clk_clk        : in  std_logic                     := '0';             --     clk.clk
+		conduit_leds   : out std_logic_vector(9 downto 0);                     -- conduit.leds
+		hex_readdata   : out std_logic_vector(41 downto 0);                    --     hex.readdata
+		reset_reset_n  : in  std_logic                     := '0'              --   reset.reset_n
 	);
 end entity reactiespel_system;
 
@@ -79,6 +79,20 @@ architecture rtl of reactiespel_system is
 		);
 	end component reactiespel_system_onchip_memory2_0;
 
+	component reactiespel_system_pio_0 is
+		port (
+			clk        : in  std_logic                     := 'X';             -- clk
+			reset_n    : in  std_logic                     := 'X';             -- reset_n
+			address    : in  std_logic_vector(1 downto 0)  := (others => 'X'); -- address
+			write_n    : in  std_logic                     := 'X';             -- write_n
+			writedata  : in  std_logic_vector(31 downto 0) := (others => 'X'); -- writedata
+			chipselect : in  std_logic                     := 'X';             -- chipselect
+			readdata   : out std_logic_vector(31 downto 0);                    -- readdata
+			in_port    : in  std_logic_vector(2 downto 0)  := (others => 'X'); -- export
+			irq        : out std_logic                                         -- irq
+		);
+	end component reactiespel_system_pio_0;
+
 	component reg32_avalon_interface is
 		port (
 			resetn     : in  std_logic                     := 'X';             -- reset_n
@@ -96,16 +110,15 @@ architecture rtl of reactiespel_system is
 
 	component reg32_reaction_game is
 		port (
-			resetn          : in  std_logic                     := 'X';             -- reset_n
-			read            : in  std_logic                     := 'X';             -- read
-			write           : in  std_logic                     := 'X';             -- write
-			chipselect      : in  std_logic                     := 'X';             -- chipselect
-			address         : in  std_logic_vector(1 downto 0)  := (others => 'X'); -- address
-			readdata        : out std_logic_vector(31 downto 0);                    -- readdata
-			writedata       : in  std_logic_vector(31 downto 0) := (others => 'X'); -- writedata
-			clock           : in  std_logic                     := 'X';             -- clk
-			conduit_LED     : out std_logic_vector(9 downto 0);                     -- leds
-			conduit_buttons : in  std_logic_vector(3 downto 0)  := (others => 'X')  -- buttons
+			resetn      : in  std_logic                     := 'X';             -- reset_n
+			read        : in  std_logic                     := 'X';             -- read
+			write       : in  std_logic                     := 'X';             -- write
+			chipselect  : in  std_logic                     := 'X';             -- chipselect
+			address     : in  std_logic_vector(1 downto 0)  := (others => 'X'); -- address
+			readdata    : out std_logic_vector(31 downto 0);                    -- readdata
+			writedata   : in  std_logic_vector(31 downto 0) := (others => 'X'); -- writedata
+			clock       : in  std_logic                     := 'X';             -- clk
+			conduit_LED : out std_logic_vector(9 downto 0)                      -- leds
 		);
 	end component reg32_reaction_game;
 
@@ -170,6 +183,11 @@ architecture rtl of reactiespel_system is
 			onchip_memory2_0_s1_byteenable                            : out std_logic_vector(3 downto 0);                     -- byteenable
 			onchip_memory2_0_s1_chipselect                            : out std_logic;                                        -- chipselect
 			onchip_memory2_0_s1_clken                                 : out std_logic;                                        -- clken
+			pio_0_s1_address                                          : out std_logic_vector(1 downto 0);                     -- address
+			pio_0_s1_write                                            : out std_logic;                                        -- write
+			pio_0_s1_readdata                                         : in  std_logic_vector(31 downto 0) := (others => 'X'); -- readdata
+			pio_0_s1_writedata                                        : out std_logic_vector(31 downto 0);                    -- writedata
+			pio_0_s1_chipselect                                       : out std_logic;                                        -- chipselect
 			reg32_avalon_interface_0_avalon_slave_0_address           : out std_logic_vector(1 downto 0);                     -- address
 			reg32_avalon_interface_0_avalon_slave_0_write             : out std_logic;                                        -- write
 			reg32_avalon_interface_0_avalon_slave_0_read              : out std_logic;                                        -- read
@@ -199,6 +217,7 @@ architecture rtl of reactiespel_system is
 			reset         : in  std_logic                     := 'X'; -- reset
 			receiver0_irq : in  std_logic                     := 'X'; -- irq
 			receiver1_irq : in  std_logic                     := 'X'; -- irq
+			receiver2_irq : in  std_logic                     := 'X'; -- irq
 			sender_irq    : out std_logic_vector(31 downto 0)         -- irq
 		);
 	end component reactiespel_system_irq_mapper;
@@ -389,8 +408,14 @@ architecture rtl of reactiespel_system is
 	signal mm_interconnect_0_timer_0_s1_address                                        : std_logic_vector(2 downto 0);  -- mm_interconnect_0:timer_0_s1_address -> timer_0:address
 	signal mm_interconnect_0_timer_0_s1_write                                          : std_logic;                     -- mm_interconnect_0:timer_0_s1_write -> mm_interconnect_0_timer_0_s1_write:in
 	signal mm_interconnect_0_timer_0_s1_writedata                                      : std_logic_vector(15 downto 0); -- mm_interconnect_0:timer_0_s1_writedata -> timer_0:writedata
+	signal mm_interconnect_0_pio_0_s1_chipselect                                       : std_logic;                     -- mm_interconnect_0:pio_0_s1_chipselect -> pio_0:chipselect
+	signal mm_interconnect_0_pio_0_s1_readdata                                         : std_logic_vector(31 downto 0); -- pio_0:readdata -> mm_interconnect_0:pio_0_s1_readdata
+	signal mm_interconnect_0_pio_0_s1_address                                          : std_logic_vector(1 downto 0);  -- mm_interconnect_0:pio_0_s1_address -> pio_0:address
+	signal mm_interconnect_0_pio_0_s1_write                                            : std_logic;                     -- mm_interconnect_0:pio_0_s1_write -> mm_interconnect_0_pio_0_s1_write:in
+	signal mm_interconnect_0_pio_0_s1_writedata                                        : std_logic_vector(31 downto 0); -- mm_interconnect_0:pio_0_s1_writedata -> pio_0:writedata
 	signal irq_mapper_receiver0_irq                                                    : std_logic;                     -- jtag_uart_0:av_irq -> irq_mapper:receiver0_irq
 	signal irq_mapper_receiver1_irq                                                    : std_logic;                     -- timer_0:irq -> irq_mapper:receiver1_irq
+	signal irq_mapper_receiver2_irq                                                    : std_logic;                     -- pio_0:irq -> irq_mapper:receiver2_irq
 	signal nios2_qsys_0_d_irq_irq                                                      : std_logic_vector(31 downto 0); -- irq_mapper:sender_irq -> nios2_qsys_0:d_irq
 	signal rst_controller_reset_out_reset                                              : std_logic;                     -- rst_controller:reset_out -> [mm_interconnect_0:jtag_uart_0_reset_reset_bridge_in_reset_reset, rst_controller_reset_out_reset:in]
 	signal nios2_qsys_0_jtag_debug_module_reset_reset                                  : std_logic;                     -- nios2_qsys_0:jtag_debug_module_resetrequest -> rst_controller:reset_in1
@@ -400,8 +425,9 @@ architecture rtl of reactiespel_system is
 	signal mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_read_ports_inv              : std_logic;                     -- mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_read:inv -> jtag_uart_0:av_read_n
 	signal mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_write_ports_inv             : std_logic;                     -- mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_write:inv -> jtag_uart_0:av_write_n
 	signal mm_interconnect_0_timer_0_s1_write_ports_inv                                : std_logic;                     -- mm_interconnect_0_timer_0_s1_write:inv -> timer_0:write_n
+	signal mm_interconnect_0_pio_0_s1_write_ports_inv                                  : std_logic;                     -- mm_interconnect_0_pio_0_s1_write:inv -> pio_0:write_n
 	signal rst_controller_reset_out_reset_ports_inv                                    : std_logic;                     -- rst_controller_reset_out_reset:inv -> [jtag_uart_0:rst_n, sysid_qsys_0:reset_n]
-	signal rst_controller_001_reset_out_reset_ports_inv                                : std_logic;                     -- rst_controller_001_reset_out_reset:inv -> [nios2_qsys_0:reset_n, reg32_avalon_interface_0:resetn, reg32_reaction_game_component_0:resetn, timer_0:reset_n]
+	signal rst_controller_001_reset_out_reset_ports_inv                                : std_logic;                     -- rst_controller_001_reset_out_reset:inv -> [nios2_qsys_0:reset_n, pio_0:reset_n, reg32_avalon_interface_0:resetn, reg32_reaction_game_component_0:resetn, timer_0:reset_n]
 
 begin
 
@@ -464,6 +490,19 @@ begin
 			freeze     => '0'                                               -- (terminated)
 		);
 
+	pio_0 : component reactiespel_system_pio_0
+		port map (
+			clk        => clk_clk,                                      --                 clk.clk
+			reset_n    => rst_controller_001_reset_out_reset_ports_inv, --               reset.reset_n
+			address    => mm_interconnect_0_pio_0_s1_address,           --                  s1.address
+			write_n    => mm_interconnect_0_pio_0_s1_write_ports_inv,   --                    .write_n
+			writedata  => mm_interconnect_0_pio_0_s1_writedata,         --                    .writedata
+			chipselect => mm_interconnect_0_pio_0_s1_chipselect,        --                    .chipselect
+			readdata   => mm_interconnect_0_pio_0_s1_readdata,          --                    .readdata
+			in_port    => buttons_export,                               -- external_connection.export
+			irq        => irq_mapper_receiver2_irq                      --                 irq.irq
+		);
+
 	reg32_avalon_interface_0 : component reg32_avalon_interface
 		port map (
 			resetn     => rst_controller_001_reset_out_reset_ports_inv,                         --    clock_reset.reset_n
@@ -480,16 +519,15 @@ begin
 
 	reg32_reaction_game_component_0 : component reg32_reaction_game
 		port map (
-			resetn          => rst_controller_001_reset_out_reset_ports_inv,                                --    clock_reset.reset_n
-			read            => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_read,       -- avalon_slave_0.read
-			write           => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_write,      --               .write
-			chipselect      => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_chipselect, --               .chipselect
-			address         => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_address,    --               .address
-			readdata        => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_readdata,   --               .readdata
-			writedata       => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_writedata,  --               .writedata
-			clock           => clk_clk,                                                                     --     clock_sink.clk
-			conduit_LED     => conduit_leds,                                                                --    conduit_end.leds
-			conduit_buttons => conduit_buttons                                                              --               .buttons
+			resetn      => rst_controller_001_reset_out_reset_ports_inv,                                --    clock_reset.reset_n
+			read        => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_read,       -- avalon_slave_0.read
+			write       => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_write,      --               .write
+			chipselect  => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_chipselect, --               .chipselect
+			address     => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_address,    --               .address
+			readdata    => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_readdata,   --               .readdata
+			writedata   => mm_interconnect_0_reg32_reaction_game_component_0_avalon_slave_0_writedata,  --               .writedata
+			clock       => clk_clk,                                                                     --     clock_sink.clk
+			conduit_LED => conduit_leds                                                                 --    conduit_end.leds
 		);
 
 	sysid_qsys_0 : component reactiespel_system_sysid_qsys_0
@@ -551,6 +589,11 @@ begin
 			onchip_memory2_0_s1_byteenable                            => mm_interconnect_0_onchip_memory2_0_s1_byteenable,                            --                                               .byteenable
 			onchip_memory2_0_s1_chipselect                            => mm_interconnect_0_onchip_memory2_0_s1_chipselect,                            --                                               .chipselect
 			onchip_memory2_0_s1_clken                                 => mm_interconnect_0_onchip_memory2_0_s1_clken,                                 --                                               .clken
+			pio_0_s1_address                                          => mm_interconnect_0_pio_0_s1_address,                                          --                                       pio_0_s1.address
+			pio_0_s1_write                                            => mm_interconnect_0_pio_0_s1_write,                                            --                                               .write
+			pio_0_s1_readdata                                         => mm_interconnect_0_pio_0_s1_readdata,                                         --                                               .readdata
+			pio_0_s1_writedata                                        => mm_interconnect_0_pio_0_s1_writedata,                                        --                                               .writedata
+			pio_0_s1_chipselect                                       => mm_interconnect_0_pio_0_s1_chipselect,                                       --                                               .chipselect
 			reg32_avalon_interface_0_avalon_slave_0_address           => mm_interconnect_0_reg32_avalon_interface_0_avalon_slave_0_address,           --        reg32_avalon_interface_0_avalon_slave_0.address
 			reg32_avalon_interface_0_avalon_slave_0_write             => mm_interconnect_0_reg32_avalon_interface_0_avalon_slave_0_write,             --                                               .write
 			reg32_avalon_interface_0_avalon_slave_0_read              => mm_interconnect_0_reg32_avalon_interface_0_avalon_slave_0_read,              --                                               .read
@@ -579,6 +622,7 @@ begin
 			reset         => rst_controller_001_reset_out_reset, -- clk_reset.reset
 			receiver0_irq => irq_mapper_receiver0_irq,           -- receiver0.irq
 			receiver1_irq => irq_mapper_receiver1_irq,           -- receiver1.irq
+			receiver2_irq => irq_mapper_receiver2_irq,           -- receiver2.irq
 			sender_irq    => nios2_qsys_0_d_irq_irq              --    sender.irq
 		);
 
@@ -719,6 +763,8 @@ begin
 	mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_write_ports_inv <= not mm_interconnect_0_jtag_uart_0_avalon_jtag_slave_write;
 
 	mm_interconnect_0_timer_0_s1_write_ports_inv <= not mm_interconnect_0_timer_0_s1_write;
+
+	mm_interconnect_0_pio_0_s1_write_ports_inv <= not mm_interconnect_0_pio_0_s1_write;
 
 	rst_controller_reset_out_reset_ports_inv <= not rst_controller_reset_out_reset;
 

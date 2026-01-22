@@ -1,0 +1,144 @@
+/*************************************************************************
+* Copyright (c) 2004 Altera Corporation, San Jose, California, USA.      *
+* All rights reserved. All use of this software and documentation is     *
+* subject to the License Agreement located at the end of this file below.*
+**************************************************************************
+* Description:                                                           *
+* The following is a simple hello world program running MicroC/OS-II.The * 
+* purpose of the design is to be a very simple application that just     *
+* demonstrates MicroC/OS-II running on NIOS II.The design doesn't account*
+* for issues such as checking system call return codes. etc.             *
+*                                                                        *
+* Requirements:                                                          *
+*   -Supported Example Hardware Platforms                                *
+*     Standard                                                           *
+*     Full Featured                                                      *
+*     Low Cost                                                           *
+*   -Supported Development Boards                                        *
+*     Nios II Development Board, Stratix II Edition                      *
+*     Nios Development Board, Stratix Professional Edition               *
+*     Nios Development Board, Stratix Edition                            *
+*     Nios Development Board, Cyclone Edition                            *
+*   -System Library Settings                                             *
+*     RTOS Type - MicroC/OS-II                                           *
+*     Periodic System Timer                                              *
+*   -Know Issues                                                         *
+*     If this design is run on the ISS, terminal output will take several*
+*     minutes per iteration.                                             *
+**************************************************************************/
+
+#include <stdio.h>
+#include <system.h>                  // Voor alle BSP-definities (zoals base addresses en IRQs)
+#include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
+#include <io.h>
+#include "includes.h"
+
+#include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
+#include <altera_avalon_pio_regs.h>
+
+// Register offsets
+#define OFFSET_CTRL			0
+#define OFFSET_SPEED 		4
+#define OFFSET_STATUS 		8
+
+#define TASK_STACKSIZE      1024
+#define TASK_IO_TEST 		1
+#define TASK_BUTTON_TEST	2
+
+OS_STK    io_testTaskStk[TASK_STACKSIZE];
+OS_STK	  button_testTaskStk[TASK_STACKSIZE];
+
+volatile int edge_capture;
+
+
+void io_test(void* pdata)
+{
+	printf("Testing all IO's");
+	unsigned int status_val;
+	unsigned int speed_val;
+	unsigned int ctrl_val;
+	unsigned int buttons;
+
+	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, 0x00000002);
+	OSTimeDlyHMSM(0, 0, 1, 0);
+	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, 25000000);
+	OSTimeDlyHMSM(0, 0, 1, 0);
+	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, 0x00000005);
+	while (1)
+	{
+		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+		speed_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED);
+		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+		OSTimeDlyHMSM(0, 0, 0, 250);
+
+		printf("Current CTRL:   0x%08X\n", ctrl_val);
+		printf("Current status: 0x%08X\n", status_val);
+		printf("Current speed: 0x%08X\n", speed_val);
+
+		//buttons = IORD_32DIRECT()
+
+  }
+}
+
+void button_test(void *pdata)
+{
+	/* CAST the context if needed, but usually we just read the hardware */
+
+	// 1. Read the edge capture register to see WHICH button was pressed
+	// This also "captures" the event so we can process it
+    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(BUTTONS_BASE);
+
+    // 2. Clear the edge capture register (Write any value to it)
+    // If you don't do this, the interrupt will stay high and hang the CPU!
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(BUTTONS_BASE, 0x0);
+
+    // 3. Optional: Print for debugging (Note: printf is slow in ISRs, use sparingly)
+    printf("Button IRQ! Edge: 0x%X\n", edge_capture);
+}
+
+
+int main(void) {
+	// 1. Initialize the PIO for Interrupts
+	// Enable interrupts for all 4 bits
+	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_0_BASE, 0xf);
+
+	// Reset the edge capture register to be safe
+	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE, 0x0);
+
+	// 2. Register the ISR with the Nios II Interrupt Controller
+	alt_ic_isr_register(
+		PIO_0_IRQ_INTERRUPT_CONTROLLER_ID,
+		PIO_0_IRQ,
+		PIO_0_isr,
+		NULL, // Context (could be a pointer to a data struct)
+		0     // Flags (reserved)
+	);
+
+    OSInit();
+
+    OSTaskCreateExt(io_test,
+                    NULL,
+                    &io_testTaskStk[1023],
+					TASK_IO_TEST,
+					TASK_IO_TEST,
+					io_testTaskStk,
+                    1024,
+                    NULL,
+                    0
+    );
+
+    OSTaskCreateExt(io_test,
+                    NULL,
+                    &button_testTaskStk[1023],
+    				TASK_BUTTON_TEST,
+    				TASK_BUTTON_TEST,
+					button_testTaskStk,
+                    1024,
+                    NULL,
+                    0
+    );
+
+    OSStart();
+    return 0;
+}
+

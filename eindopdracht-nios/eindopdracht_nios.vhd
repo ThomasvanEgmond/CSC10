@@ -18,7 +18,7 @@ END eindopdracht_nios;
 ARCHITECTURE Structure OF eindopdracht_nios IS
 	COMPONENT reactiespel_system is
 		PORT (
-			conduit_buttons	: IN  STD_LOGIC_VECTOR(3 downto 0)  := (others => 'X'); -- export
+			buttons_export		: IN  STD_LOGIC_VECTOR(3 downto 1)  := (others => 'X'); -- export
 			clk_clk        	: IN  STD_LOGIC                     := 'X';             -- clk
 			hex_readdata   	: OUT STD_LOGIC_VECTOR(41 downto 0);                    -- readdata
 			conduit_leds		: OUT STD_LOGIC_VECTOR(9 downto 0);                     -- export
@@ -29,7 +29,7 @@ ARCHITECTURE Structure OF eindopdracht_nios IS
 BEGIN
 	u0 : COMPONENT reactiespel_system
 		PORT MAP (
-			conduit_buttons		   		=> KEY(3 DOWNTO 0), -- buttons.export
+			buttons_export			   		=> KEY(3 DOWNTO 1), -- buttons.export
 			clk_clk        					=> CLOCK_50,		  --     clk.clk
 			hex_readdata(6 DOWNTO 0)   	=> HEX0,			     --     hex.readdata
 			hex_readdata(13 DOWNTO 7)   	=> HEX1,			     --     hex.readdata
