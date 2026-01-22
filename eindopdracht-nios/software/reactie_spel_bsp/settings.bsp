@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>ucosii</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>2026-01-22 15:21:54</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1769091714406</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>2026-01-22 15:52:06</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1769093526117</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\Users\kriss\Desktop\Embedded_Minor\CSC10\eindopdracht-nios\software\reactie_spel_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\reactiespel_system.sopcinfo</SopcDesignFile>
@@ -1745,7 +1745,7 @@
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>pio_0</slaveDescriptor>
+                <slaveDescriptor>pio_buttons</slaveDescriptor>
                 <addressRange>0x00000010 - 0x0000001F</addressRange>
                 <addressSpan>16</addressSpan>
                 <attributes/>

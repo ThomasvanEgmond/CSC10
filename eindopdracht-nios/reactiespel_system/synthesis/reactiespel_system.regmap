@@ -219,7 +219,7 @@
     </registers>
    </peripheral>
   <peripheral>
-      <name>reactiespel_system_pio_0_s1_altera_avalon_pio</name><baseAddress>0x00000000</baseAddress> 
+      <name>reactiespel_system_pio_buttons_s1_altera_avalon_pio</name><baseAddress>0x00000000</baseAddress> 
       <addressBlock>
         <offset>0x0</offset>
         <size>32</size>

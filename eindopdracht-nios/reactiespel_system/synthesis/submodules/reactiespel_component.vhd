@@ -79,7 +79,7 @@ begin
 				if tick_counter >= unsigned(reg_game_speed) then
 					tick_counter <= (others => '0');
 					-- Back and forth (ping-pong)
-               if reg_game_ctrl(2) = '0' then  
+               if reg_game_ctrl(1) = '0' then  
 						-- If going left
 						if direction = '0' then
 							if current_pos >= 9 then

@@ -4,7 +4,7 @@
  * Machine generated for CPU 'nios2_qsys_0' in SOPC Builder design 'reactiespel_system'
  * SOPC Builder design path: ../../reactiespel_system.sopcinfo
  *
- * Generated: Thu Jan 22 15:21:55 CET 2026
+ * Generated: Thu Jan 22 15:48:50 CET 2026
  */
 
 /*
@@ -227,30 +227,30 @@
 
 
 /*
- * pio_0 configuration
+ * pio_buttons configuration
  *
  */
 
-#define ALT_MODULE_CLASS_pio_0 altera_avalon_pio
-#define PIO_0_BASE 0x10
-#define PIO_0_BIT_CLEARING_EDGE_REGISTER 0
-#define PIO_0_BIT_MODIFYING_OUTPUT_REGISTER 0
-#define PIO_0_CAPTURE 1
-#define PIO_0_DATA_WIDTH 3
-#define PIO_0_DO_TEST_BENCH_WIRING 0
-#define PIO_0_DRIVEN_SIM_VALUE 0
-#define PIO_0_EDGE_TYPE "FALLING"
-#define PIO_0_FREQ 50000000
-#define PIO_0_HAS_IN 1
-#define PIO_0_HAS_OUT 0
-#define PIO_0_HAS_TRI 0
-#define PIO_0_IRQ 2
-#define PIO_0_IRQ_INTERRUPT_CONTROLLER_ID 0
-#define PIO_0_IRQ_TYPE "EDGE"
-#define PIO_0_NAME "/dev/pio_0"
-#define PIO_0_RESET_VALUE 0
-#define PIO_0_SPAN 16
-#define PIO_0_TYPE "altera_avalon_pio"
+#define ALT_MODULE_CLASS_pio_buttons altera_avalon_pio
+#define PIO_BUTTONS_BASE 0x10
+#define PIO_BUTTONS_BIT_CLEARING_EDGE_REGISTER 0
+#define PIO_BUTTONS_BIT_MODIFYING_OUTPUT_REGISTER 0
+#define PIO_BUTTONS_CAPTURE 1
+#define PIO_BUTTONS_DATA_WIDTH 3
+#define PIO_BUTTONS_DO_TEST_BENCH_WIRING 0
+#define PIO_BUTTONS_DRIVEN_SIM_VALUE 0
+#define PIO_BUTTONS_EDGE_TYPE "FALLING"
+#define PIO_BUTTONS_FREQ 50000000
+#define PIO_BUTTONS_HAS_IN 1
+#define PIO_BUTTONS_HAS_OUT 0
+#define PIO_BUTTONS_HAS_TRI 0
+#define PIO_BUTTONS_IRQ 2
+#define PIO_BUTTONS_IRQ_INTERRUPT_CONTROLLER_ID 0
+#define PIO_BUTTONS_IRQ_TYPE "EDGE"
+#define PIO_BUTTONS_NAME "/dev/pio_buttons"
+#define PIO_BUTTONS_RESET_VALUE 0
+#define PIO_BUTTONS_SPAN 16
+#define PIO_BUTTONS_TYPE "altera_avalon_pio"
 
 
 /*
@@ -293,7 +293,7 @@
 #define SYSID_QSYS_0_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define SYSID_QSYS_0_NAME "/dev/sysid_qsys_0"
 #define SYSID_QSYS_0_SPAN 8
-#define SYSID_QSYS_0_TIMESTAMP 1769091146
+#define SYSID_QSYS_0_TIMESTAMP 1769092752
 #define SYSID_QSYS_0_TYPE "altera_avalon_sysid_qsys"
 
 

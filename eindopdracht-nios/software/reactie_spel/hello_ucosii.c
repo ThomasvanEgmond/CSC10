@@ -32,7 +32,7 @@
 #include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
 #include <io.h>
 #include "includes.h"
-
+#include <stdio.h>
 #include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
 #include <altera_avalon_pio_regs.h>
 
@@ -40,10 +40,7 @@
 #define ENABLE_GAME_POS		(0U)
 #define ENABLE_GAME			(1 << ENABLE_GAME_POS)
 
-#define RESET_GAME_POS		(1U)
-#define RESET_GAME			(1 << RESET_GAME_POS)
-
-#define MODE_GAME_POS		(2U)
+#define MODE_GAME_POS		(1U)
 #define MODE0_GAME			(0 << MODE_GAME_POS)
 #define MODE1_GAME			(1 << MODE_GAME_POS)
 
@@ -53,29 +50,31 @@
 #define OFFSET_STATUS 		8
 
 #define TASK_STACKSIZE      532
-#define TASK_IO_TEST 		10
-#define TASK_BUTTON_TEST	5
+#define CONTROL_TASK_PRIO 	10
+#define INPUT_TASK_PRIO		5
 
-OS_STK    io_testTaskStk[TASK_STACKSIZE];
-OS_STK	  button_testTaskStk[TASK_STACKSIZE];
+OS_STK    controlTaskStk[TASK_STACKSIZE];
+OS_STK	  inputTaskStk[TASK_STACKSIZE];
 
 OS_EVENT *ButtonSem;
 
 volatile int edge_capture;
 
+enum STATE {
+	RUNNING, STOPPED
+};
 
-void io_test(void* pdata)
+
+void control_task(void* pdata)
 {
 	printf("Testing all IO's\n");
 	unsigned int status_val;
 	unsigned int speed_val;
 	unsigned int ctrl_val;
 
-	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, 0x00000002);
-	OSTimeDlyHMSM(0, 0, 1, 0);
 	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, 25000000);
 	OSTimeDlyHMSM(0, 0, 1, 0);
-	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, 0x00000005);
+	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ENABLE_GAME | MODE0_GAME);
 	while (1)
 	{
 		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
@@ -89,7 +88,7 @@ void io_test(void* pdata)
   }
 }
 
-void button_task(void *pdata) {
+void input_task(void *pdata) {
     INT8U err;
     while (1) {
         // Wait here forever until the ISR signals the semaphore
@@ -108,8 +107,8 @@ void button_isr(void* context) {
 	OSIntEnter();
 
     // Read and Clear the edge capture
-    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE);
-    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE, 0x0);
+    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
 
     // Signal the task that a button was pressed
     OSSemPost(ButtonSem);
@@ -123,28 +122,38 @@ int main(void)
 
     ButtonSem = OSSemCreate(0);
 
-    IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_0_BASE, 0xf);
-    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_0_BASE, 0x0);
+    IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_BUTTONS_BASE, 0xf);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
 
     alt_ic_isr_register(
-        PIO_0_IRQ_INTERRUPT_CONTROLLER_ID,
-        PIO_0_IRQ,
+        PIO_BUTTONS_IRQ_INTERRUPT_CONTROLLER_ID,
+        PIO_BUTTONS_IRQ,
         button_isr,
         NULL,
         NULL
     );
 
-    OSTaskCreateExt(io_test, NULL,
-        &io_testTaskStk[TASK_STACKSIZE-1],
-        TASK_IO_TEST, TASK_IO_TEST,
-        io_testTaskStk, TASK_STACKSIZE,
-        NULL, 0);
+    OSTaskCreateExt(control_task,
+    				NULL,
+					&controlTaskStk[TASK_STACKSIZE-1],
+					CONTROL_TASK_PRIO,
+					CONTROL_TASK_PRIO,
+					controlTaskStk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
 
-    OSTaskCreateExt(button_task, NULL,
-        &button_testTaskStk[TASK_STACKSIZE-1],
-        TASK_BUTTON_TEST, TASK_BUTTON_TEST,
-        button_testTaskStk, TASK_STACKSIZE,
-        NULL, 0);
+    OSTaskCreateExt(input_task,
+    				NULL,
+					&inputTaskStk[TASK_STACKSIZE-1],
+					INPUT_TASK_PRIO,
+					INPUT_TASK_PRIO,
+					inputTaskStk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
 
     OSStart();
     return 0;

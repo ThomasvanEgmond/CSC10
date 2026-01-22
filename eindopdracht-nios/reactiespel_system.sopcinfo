@@ -5,11 +5,11 @@
  version="1.0"
  fabric="QSYS">
  <!-- Format version 18.1 625 (Future versions may contain additional information.) -->
- <!-- 2026.01.22.15:12:26 -->
+ <!-- 2026.01.22.15:39:12 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1769091146</value>
+  <value>1769092752</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -360,9 +360,9 @@ parameters are a RESULT of the module parameters. -->
    </clockDomainMember>
    <clockDomainMember>
     <isBridge>false</isBridge>
-    <moduleName>pio_0</moduleName>
+    <moduleName>pio_buttons</moduleName>
     <slaveName>clk</slaveName>
-    <name>pio_0.clk</name>
+    <name>pio_buttons.clk</name>
    </clockDomainMember>
    <clockDomainMember>
     <isBridge>false</isBridge>
@@ -2359,7 +2359,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="dataSlaveMapParam">
    <type>java.lang.String</type>
-   <value><![CDATA[<address-map><slave name='reg32_reaction_game_component_0.avalon_slave_0' start='0x0' end='0x10' /><slave name='pio_0.s1' start='0x10' end='0x20' /><slave name='timer_0.s1' start='0x20' end='0x40' /><slave name='reg32_avalon_interface_0.avalon_slave_0' start='0x40' end='0x50' /><slave name='sysid_qsys_0.control_slave' start='0x50' end='0x58' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x58' end='0x60' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x1000' end='0x1800' /><slave name='onchip_memory2_0.s1' start='0x40000' end='0x60000' /></address-map>]]></value>
+   <value><![CDATA[<address-map><slave name='reg32_reaction_game_component_0.avalon_slave_0' start='0x0' end='0x10' /><slave name='pio_buttons.s1' start='0x10' end='0x20' /><slave name='timer_0.s1' start='0x20' end='0x40' /><slave name='reg32_avalon_interface_0.avalon_slave_0' start='0x40' end='0x50' /><slave name='sysid_qsys_0.control_slave' start='0x50' end='0x58' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x58' end='0x60' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x1000' end='0x1800' /><slave name='onchip_memory2_0.s1' start='0x40000' end='0x60000' /></address-map>]]></value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -2995,9 +2995,9 @@ parameters are a RESULT of the module parameters. -->
    </memoryBlock>
    <memoryBlock>
     <isBridge>false</isBridge>
-    <moduleName>pio_0</moduleName>
+    <moduleName>pio_buttons</moduleName>
     <slaveName>s1</slaveName>
-    <name>pio_0.s1</name>
+    <name>pio_buttons.s1</name>
     <baseAddress>16</baseAddress>
     <span>16</span>
    </memoryBlock>
@@ -3389,9 +3389,9 @@ parameters are a RESULT of the module parameters. -->
    </interrupt>
    <interrupt>
     <isBridge>false</isBridge>
-    <moduleName>pio_0</moduleName>
+    <moduleName>pio_buttons</moduleName>
     <slaveName>irq</slaveName>
-    <name>pio_0.irq</name>
+    <name>pio_buttons.irq</name>
     <interruptNumber>2</interruptNumber>
    </interrupt>
   </interface>
@@ -4792,7 +4792,11 @@ parameters are a RESULT of the module parameters. -->
    </port>
   </interface>
  </module>
- <module name="pio_0" kind="altera_avalon_pio" version="18.1" path="pio_0">
+ <module
+   name="pio_buttons"
+   kind="altera_avalon_pio"
+   version="18.1"
+   path="pio_buttons">
   <!-- Describes a single module. Module parameters are
 the requested settings for a module instance. -->
   <assignment>
@@ -5591,7 +5595,7 @@ parameters are a RESULT of the module parameters. -->
    </assignment>
    <parameter name="associatedAddressablePoint">
     <type>com.altera.entityinterfaces.IConnectionPoint</type>
-    <value>pio_0.s1</value>
+    <value>pio_buttons.s1</value>
     <derived>false</derived>
     <enabled>true</enabled>
     <visible>true</visible>
@@ -6742,7 +6746,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.CMacro.TIMESTAMP</name>
-   <value>1769091146</value>
+   <value>1769092752</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.compatible</name>
@@ -6762,7 +6766,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.dts.params.timestamp</name>
-   <value>1769091146</value>
+   <value>1769092752</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.vendor</name>
@@ -6778,7 +6782,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="timestamp">
    <type>int</type>
-   <value>1769091146</value>
+   <value>1769092752</value>
    <derived>true</derived>
    <enabled>false</enabled>
    <visible>false</visible>
@@ -8359,11 +8363,11 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>s1</endConnectionPoint>
  </connection>
  <connection
-   name="nios2_qsys_0.data_master/pio_0.s1"
+   name="nios2_qsys_0.data_master/pio_buttons.s1"
    kind="avalon"
    version="18.1"
    start="nios2_qsys_0.data_master"
-   end="pio_0.s1">
+   end="pio_buttons.s1">
   <parameter name="arbitrationPriority">
    <type>int</type>
    <value>1</value>
@@ -8406,7 +8410,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <startModule>nios2_qsys_0</startModule>
   <startConnectionPoint>data_master</startConnectionPoint>
-  <endModule>pio_0</endModule>
+  <endModule>pio_buttons</endModule>
   <endConnectionPoint>s1</endConnectionPoint>
  </connection>
  <connection
@@ -8620,11 +8624,11 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>clk</endConnectionPoint>
  </connection>
  <connection
-   name="clk_0.clk/pio_0.clk"
+   name="clk_0.clk/pio_buttons.clk"
    kind="clock"
    version="18.1"
    start="clk_0.clk"
-   end="pio_0.clk">
+   end="pio_buttons.clk">
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
    <value>UNKNOWN</value>
@@ -8643,7 +8647,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <startModule>clk_0</startModule>
   <startConnectionPoint>clk</startConnectionPoint>
-  <endModule>pio_0</endModule>
+  <endModule>pio_buttons</endModule>
   <endConnectionPoint>clk</endConnectionPoint>
  </connection>
  <connection
@@ -8798,11 +8802,11 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>irq</endConnectionPoint>
  </connection>
  <connection
-   name="nios2_qsys_0.d_irq/pio_0.irq"
+   name="nios2_qsys_0.d_irq/pio_buttons.irq"
    kind="interrupt"
    version="18.1"
    start="nios2_qsys_0.d_irq"
-   end="pio_0.irq">
+   end="pio_buttons.irq">
   <parameter name="irqNumber">
    <type>int</type>
    <value>2</value>
@@ -8829,7 +8833,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <startModule>nios2_qsys_0</startModule>
   <startConnectionPoint>d_irq</startConnectionPoint>
-  <endModule>pio_0</endModule>
+  <endModule>pio_buttons</endModule>
   <endConnectionPoint>irq</endConnectionPoint>
  </connection>
  <connection
@@ -8968,11 +8972,11 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>reset</endConnectionPoint>
  </connection>
  <connection
-   name="clk_0.clk_reset/pio_0.reset"
+   name="clk_0.clk_reset/pio_buttons.reset"
    kind="reset"
    version="18.1"
    start="clk_0.clk_reset"
-   end="pio_0.reset">
+   end="pio_buttons.reset">
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
    <value>UNKNOWN</value>
@@ -8991,7 +8995,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <startModule>clk_0</startModule>
   <startConnectionPoint>clk_reset</startConnectionPoint>
-  <endModule>pio_0</endModule>
+  <endModule>pio_buttons</endModule>
   <endConnectionPoint>reset</endConnectionPoint>
  </connection>
  <connection
