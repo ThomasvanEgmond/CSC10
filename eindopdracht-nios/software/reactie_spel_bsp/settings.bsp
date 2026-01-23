@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>ucosii</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>2026-01-23 11:30:33</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1769164233699</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>2026-01-23 12:10:14</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1769166614063</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\Users\kriss\Desktop\Embedded_Minor\CSC10\eindopdracht-nios\software\reactie_spel_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\reactiespel_system.sopcinfo</SopcDesignFile>

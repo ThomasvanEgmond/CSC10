@@ -1,0 +1,305 @@
+/*************************************************************************
+* Copyright (c) 2004 Altera Corporation, San Jose, California, USA.      *
+* All rights reserved. All use of this software and documentation is     *
+* subject to the License Agreement located at the end of this file below.*
+**************************************************************************
+* Description:                                                           *
+* The following is a simple hello world program running MicroC/OS-II.The *
+* purpose of the design is to be a very simple application that just     *
+* demonstrates MicroC/OS-II running on NIOS II.The design doesn't account*
+* for issues such as checking system call return codes. etc.             *
+*                                                                        *
+* Requirements:                                                          *
+*   -Supported Example Hardware Platforms                                *
+*     Standard                                                           *
+*     Full Featured                                                      *
+*     Low Cost                                                           *
+*   -Supported Development Boards                                        *
+*     Nios II Development Board, Stratix II Edition                      *
+*     Nios Development Board, Stratix Professional Edition               *
+*     Nios Development Board, Stratix Edition                            *
+*     Nios Development Board, Cyclone Edition                            *
+*   -System Library Settings                                             *
+*     RTOS Type - MicroC/OS-II                                           *
+*     Periodic System Timer                                              *
+*   -Know Issues                                                         *
+*     If this design is run on the ISS, terminal output will take several*
+*     minutes per iteration.                                             *
+**************************************************************************/
+
+#include <stdio.h>
+#include <system.h>                  // Voor alle BSP-definities (zoals base addresses en IRQs)
+#include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
+#include <io.h>
+#include "includes.h"
+#include <stdio.h>
+#include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
+#include <altera_avalon_pio_regs.h>
+#include <stdbool.h>
+
+/* Register Offsets */
+#define OFFSET_CTRL         0
+#define OFFSET_SPEED        4
+#define OFFSET_STATUS       8
+
+// REGISTER POS AND MSK
+/* CTRL Register Mask & Bit Positions */
+
+// REGISTER MASKS
+#define ENABLE_GAME_POS		(0U)
+#define ENABLE_GAME_MSK		(1 << ENABLE_GAME_POS)
+
+#define MODE_GAME_POS		(1U)
+#define MODE_GAME_MSK		(1 << MODE_GAME_POS)
+
+#define TARGET_START_POS    (8U)
+#define TARGET_MSK          (0x3FFU << TARGET_START_POS) 	// Bits 8-17
+
+/* STATUS Register Mask (LEDs 0-9) */
+#define CURRENT_POS_MSK     (0x3FFU)                  		// Bits 0-9
+
+// SWITCHES POS AND MSK
+// SW(0-7): 8 bits for speed
+#define SW_SPEED_POS	   	0
+#define SW_SPEED_MSK    	(0xFFU << SW_SPEED_POS)
+
+// SW(8): 1 bit for mode
+#define SW_MODE_POS    		8
+#define SW_MODE_MSK     	(1U << SW_MODE_POS)
+
+// SW(9): 1 bit for enable
+#define SW_START_POS   		9
+#define SW_START_MSK      	(1U << SW_START_POS)
+
+#define TASK_STACKSIZE      512
+#define GAME_TASK_PRIO 		5
+#define CONFIG_TASK_PRIO	10
+#define DISPLAY_TASK_PRIO	15
+
+OS_STK    game_task_stk[TASK_STACKSIZE];
+OS_STK	  config_task_stk[TASK_STACKSIZE];
+OS_STK	  display_task_stk[TASK_STACKSIZE];
+
+OS_EVENT *hit_miss_sem;
+OS_EVENT *score_update_sem;
+
+volatile int edge_capture;
+unsigned int score = 0;
+
+enum STATE {
+	RUNNING, STOPPED
+};
+
+enum STATE state;
+
+// Turn the game ON
+void start_game()
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl |= ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Freeze the game
+void stop_game()
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Toggle between Modes
+void set_mode(unsigned int mode)
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    if (!mode) {
+    	ctrl &= ~MODE_GAME_MSK;
+    } else {
+    	ctrl |= MODE_GAME_MSK;
+    }
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Read ctrl register, clear target and write new data
+void set_target(unsigned int new_target)
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~TARGET_MSK;
+    ctrl |= ((new_target & 0x3FF) << TARGET_START_POS);
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// score = 0 resets the score(lost) or score = 1 to add to current score
+void update_score(int _score)
+{
+	if (!_score) {
+		score = 0;
+	} else {
+		score++;
+	}
+	IOWR_32DIRECT(REG32_AVALON_INTERFACE_0_BASE, 0, score);
+}
+
+void config_task(void* pdata)
+{
+	unsigned int speed;
+	unsigned int mode;
+	unsigned int start;
+
+	unsigned int current_settings = 0;
+
+	while (1)
+	{
+		//Read switches
+		unsigned int new_settings = IORD_32DIRECT(PIO_SWITCHES_BASE, 0);
+
+		if (current_settings != new_settings) {
+
+			// Get values from specific switches with masking and write to register to change settings of the game
+			speed = (current_settings & SW_SPEED_MSK) >> SW_SPEED_POS;
+			unsigned int actual_speed = 10000000 - (speed * 35294);
+			IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, actual_speed);
+
+			unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+			mode  = (current_settings & SW_MODE_MSK)  >> SW_MODE_POS;
+			if (mode) {
+				ctrl |= MODE_GAME_MSK;  // Set for mode 1
+			} else {
+				ctrl &= ~MODE_GAME_MSK; // Reset for mode 0
+			}
+
+			start = (current_settings & SW_START_MSK) >> SW_START_POS;
+			if(!start) {
+				state = STOPPED;
+				stop_game();
+			} else {
+				state = RUNNING;
+				start_game();
+			}
+			current_settings = new_settings;
+		}
+		OSTimeDlyHMSM(0, 0, 0, 100);
+	}
+}
+
+void game_task(void *pdata)
+{
+    INT8U err;
+
+    unsigned int status_val;
+    unsigned int ctrl_val;
+    while (1) {
+
+    	// Check if game is running, if running: check only for KEY(3) as it is a play button
+    	if (state == RUNNING) {
+			// Wait here forever until the ISR signals the semaphore
+			OSSemPend(hit_miss_sem, 0, &err);
+
+
+        	// If play button hit, stop the game and make compare
+        	if (edge_capture == 0x01) {
+        		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+        		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+        		int current = (status_val & 0x3FF);
+        		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
+        		printf("Current: %d, target was %d" current, target);
+        		if (target == current) {
+        			score++;
+        			printf("Yes!!!");
+        		} else {
+        			score = 0;
+        			printf("NOO!!!");
+        		}
+        		OSSemPost(score_update_sem);
+        	}
+		}
+        //printf("Button Pressed! Edge: 0x%X\n", edge_capture);
+
+        // You can also read your game status here
+
+       // printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
+    }
+}
+
+void display_task(void *pdata)
+{
+	INT8U err;
+	while(1)
+	{
+		// wait for semaphore
+		OSSemPend(score_update_sem, 0, &err);
+
+		update_score(score);
+		//printf("Score updated! Current score: %d", score);
+	}
+}
+
+void button_isr(void* context)
+{
+	OSIntEnter();
+
+    // Read and Clear the edge capture
+    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
+
+    // Signal the task that a button was pressed
+    OSSemPost(hit_miss_sem);
+
+    OSIntExit();
+}
+
+int main(void)
+{
+    OSInit();
+
+    hit_miss_sem = OSSemCreate(0);
+    score_update_sem = OSSemCreate(0);
+
+    IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_BUTTONS_BASE, 0xf);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
+
+    alt_ic_isr_register(
+        PIO_BUTTONS_IRQ_INTERRUPT_CONTROLLER_ID,
+        PIO_BUTTONS_IRQ,
+        button_isr,
+        NULL,
+        NULL
+    );
+
+    OSTaskCreateExt(game_task,
+    				NULL,
+					&game_task_stk[TASK_STACKSIZE-1],
+					GAME_TASK_PRIO,
+					GAME_TASK_PRIO,
+					game_task_stk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSTaskCreateExt(config_task,
+    				NULL,
+					&config_task_stk[TASK_STACKSIZE-1],
+					CONFIG_TASK_PRIO,
+					CONFIG_TASK_PRIO,
+					config_task_stk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSTaskCreateExt(display_task,
+    				NULL,
+					&display_task_stk[TASK_STACKSIZE-1],
+					DISPLAY_TASK_PRIO,
+					DISPLAY_TASK_PRIO,
+					display_task_stk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSStart();
+    return 0;
+}
+

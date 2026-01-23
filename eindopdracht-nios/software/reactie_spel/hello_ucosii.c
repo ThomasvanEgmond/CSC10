@@ -42,10 +42,19 @@
 #define OFFSET_SPEED        4
 #define OFFSET_STATUS       8
 
-/* CTRL Register Mask & Bit Positions */
+// CTRL REGISTER MASKS
+#define ENABLE_GAME_POS		(0U)
+#define ENABLE_GAME_MSK		(1 << ENABLE_GAME_POS)
+
+#define MODE_GAME_POS		(1U)
+#define MODE_GAME_MSK		(1 << MODE_GAME_POS)
 
 #define TARGET_START_POS    (8U)
 #define TARGET_MSK          (0x3FFU << TARGET_START_POS) 	// Bits 8-17
+
+// STATUS Register Mask (LEDs 0-9)
+#define CURRENT_POS_MSK     (0x3FFU)                  		// Bits 0-9
+
 
 // SW(0-7): 8 bits for speed
 #define SW_SPEED_POS	   	0
@@ -59,13 +68,10 @@
 #define SW_START_POS   		9
 #define SW_START_MSK      	(1U << SW_START_POS)
 
-/* STATUS Register Mask (LEDs 0-9) */
-#define CURRENT_POS_MSK     (0x3FFU)                  		// Bits 0-9
-
 #define TASK_STACKSIZE      512
-#define GAME_TASK_PRIO 		10
-#define CONFIG_TASK_PRIO	5
-#define DISPLAY_TASK_PRIO	15
+#define GAME_TASK_PRIO 		1
+#define CONFIG_TASK_PRIO	2
+#define DISPLAY_TASK_PRIO	3
 
 OS_STK    game_task_stk[TASK_STACKSIZE];
 OS_STK	  config_task_stk[TASK_STACKSIZE];
@@ -80,6 +86,8 @@ unsigned int score = 0;
 enum STATE {
 	RUNNING, STOPPED
 };
+
+enum STATE state;
 
 // Turn the game ON
 void start_game()
@@ -114,48 +122,58 @@ void set_target(unsigned int new_target)
 {
     unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
     ctrl &= ~TARGET_MSK;
-    ctrl |= ((new_target & 0x3FF) << TARGET_START_POS);
+    ctrl |= ((1U << new_target) << TARGET_START_POS);
     IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
-}
-
-// score = 0 resets the score(lost) or score = 1 to add to current score
-void update_score(int _score)
-{
-	if (!_score) {
-		score = 0;
-	} else {
-		score++;
-	}
-	IOWR_32DIRECT(REG32_AVALON_INTERFACE_0_BASE, 0, score);
 }
 
 void config_task(void* pdata)
 {
-	unsigned int current_settings;
-	unsigned int speed;
-	unsigned int mode;
-	unsigned int start;
+    set_target(0);
+    unsigned int last_settings = 0; // Better name for clarity
 
+    while (1)
+    {
+        unsigned int new_settings = IORD_32DIRECT(PIO_SWITCHES_BASE, 0);
 
-	while (1)
-	{
-		current_settings = IORD_32DIRECT(PIO_SWITCHES_BASE, 0);
+        if (last_settings != new_settings) {
+            // Get new speed from switches, calculate and write to register
+            unsigned int sw_speed = (new_settings & SW_SPEED_MSK) >> SW_SPEED_POS;
+            unsigned int actual_speed = 10000000 - (sw_speed * 35294);
+            IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, actual_speed);
 
-		speed = (current_settings & SW_SPEED_MSK) >> SW_SPEED_POS;
-		mode  = (current_settings & SW_MODE_MSK)  >> SW_MODE_POS;
-		start = (current_settings & SW_START_MSK) >> SW_START_POS;
+            // Read ctrl register
+            unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
 
-		unsigned int actual_speed = 5000000 - (speed * 17647);
+            // Modify mode
+            unsigned int sw_mode = (new_settings & SW_MODE_MSK) >> SW_MODE_POS;
+            if (sw_mode) {
+                ctrl |= MODE_GAME_MSK;
+            } else {
+                ctrl &= ~MODE_GAME_MSK;
+            }
 
+            // Modify start/stop
+            unsigned int sw_start = (new_settings & SW_START_MSK) >> SW_START_POS;
+            if(!sw_start) {
+                state = STOPPED;
+                ctrl &= ~ENABLE_GAME_MSK;
+            } else {
+                state = RUNNING;
+                ctrl |= ENABLE_GAME_MSK;
+            }
 
+            // Write new values to ctrl register
+            IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
 
-	}
+            last_settings = new_settings;
+        }
+        OSTimeDlyHMSM(0, 0, 0, 100);
+    }
 }
 
 void game_task(void *pdata)
 {
     INT8U err;
-    enum STATE state;
 
     unsigned int status_val;
     unsigned int ctrl_val;
@@ -167,14 +185,14 @@ void game_task(void *pdata)
 			OSSemPend(hit_miss_sem, 0, &err);
 
 
-        	// If play button hit, stop the game and make compare
-        	if (edge_capture == 0x04) {
+        	// If play button hit, compare
+        	if (edge_capture == 0x01) {
         		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
         		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
         		int current = (status_val & 0x3FF);
         		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
-
-        		if (target == current) {
+        		printf("Current: %d, target was %d\r\n", (1 << current), target);
+        		if (target == (1 << current)) {
         			score++;
         		} else {
         			score = 0;
@@ -182,11 +200,6 @@ void game_task(void *pdata)
         		OSSemPost(score_update_sem);
         	}
 		}
-        //printf("Button Pressed! Edge: 0x%X\n", edge_capture);
-
-        // You can also read your game status here
-
-       // printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
     }
 }
 
@@ -195,11 +208,9 @@ void display_task(void *pdata)
 	INT8U err;
 	while(1)
 	{
-		// wait for semaphore
+		// wait for semaphore and update score
 		OSSemPend(score_update_sem, 0, &err);
-
-		update_score(score);
-		printf("Score updated! Current score: %d", score);
+		IOWR_32DIRECT(REG32_AVALON_INTERFACE_0_BASE, 0, score);
 	}
 }
 
@@ -211,7 +222,7 @@ void button_isr(void* context)
     edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE);
     IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
 
-    // Signal the task that a button was pressed
+    // Post semaphore, it will let game_task make compare
     OSSemPost(hit_miss_sem);
 
     OSIntExit();
@@ -222,6 +233,7 @@ int main(void)
     OSInit();
 
     hit_miss_sem = OSSemCreate(0);
+    score_update_sem = OSSemCreate(0);
 
     IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_BUTTONS_BASE, 0xf);
     IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
@@ -256,7 +268,7 @@ int main(void)
 					0
 	);
 
-    OSTaskCreateExt(display_task_stk,
+    OSTaskCreateExt(display_task,
     				NULL,
 					&display_task_stk[TASK_STACKSIZE-1],
 					DISPLAY_TASK_PRIO,
