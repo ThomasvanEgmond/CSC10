@@ -35,75 +35,176 @@
 #include <stdio.h>
 #include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
 #include <altera_avalon_pio_regs.h>
+#include <stdbool.h>
 
-// REGISTER MASKS
-#define ENABLE_GAME_POS		(0U)
-#define ENABLE_GAME			(1 << ENABLE_GAME_POS)
+/* Register Offsets */
+#define OFFSET_CTRL         0
+#define OFFSET_SPEED        4
+#define OFFSET_STATUS       8
 
-#define MODE_GAME_POS		(1U)
-#define MODE0_GAME			(0 << MODE_GAME_POS)
-#define MODE1_GAME			(1 << MODE_GAME_POS)
+/* CTRL Register Mask & Bit Positions */
 
-// Register offsets
-#define OFFSET_CTRL			0
-#define OFFSET_SPEED 		4
-#define OFFSET_STATUS 		8
+#define TARGET_START_POS    (8U)
+#define TARGET_MSK          (0x3FFU << TARGET_START_POS) 	// Bits 8-17
 
-#define TASK_STACKSIZE      532
-#define CONTROL_TASK_PRIO 	10
-#define INPUT_TASK_PRIO		5
+// SW(0-7): 8 bits for speed
+#define SW_SPEED_POS	   	0
+#define SW_SPEED_MSK    	(0xFFU << SW_SPEED_POS)
 
-OS_STK    controlTaskStk[TASK_STACKSIZE];
-OS_STK	  inputTaskStk[TASK_STACKSIZE];
+// SW(8): 1 bit for mode
+#define SW_MODE_POS    		8
+#define SW_MODE_MSK     	(1U << SW_MODE_POS)
 
-OS_EVENT *ButtonSem;
+// SW(9): 1 bit for enable
+#define SW_START_POS   		9
+#define SW_START_MSK      	(1U << SW_START_POS)
+
+/* STATUS Register Mask (LEDs 0-9) */
+#define CURRENT_POS_MSK     (0x3FFU)                  		// Bits 0-9
+
+#define TASK_STACKSIZE      512
+#define GAME_TASK_PRIO 		10
+#define CONFIG_TASK_PRIO	5
+#define DISPLAY_TASK_PRIO	15
+
+OS_STK    game_task_stk[TASK_STACKSIZE];
+OS_STK	  config_task_stk[TASK_STACKSIZE];
+OS_STK	  display_task_stk[TASK_STACKSIZE];
+
+OS_EVENT *hit_miss_sem;
+OS_EVENT *score_update_sem;
 
 volatile int edge_capture;
+unsigned int score = 0;
 
 enum STATE {
 	RUNNING, STOPPED
 };
 
-
-void control_task(void* pdata)
+// Turn the game ON
+void start_game()
 {
-	printf("Testing all IO's\n");
-	unsigned int status_val;
-	unsigned int speed_val;
-	unsigned int ctrl_val;
-
-	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, 25000000);
-	OSTimeDlyHMSM(0, 0, 1, 0);
-	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ENABLE_GAME | MODE0_GAME);
-	while (1)
-	{
-		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
-		//speed_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED);
-		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
-		OSTimeDlyHMSM(0,0,1,0);
-		//printf("Current CTRL:   0x%08X\n", ctrl_val);
-		printf("Current status: 0x%08X\n", status_val);
-		//printf("Current speed:  0x%08X\n", speed_val);
-
-  }
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl |= ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
 }
 
-void input_task(void *pdata) {
-    INT8U err;
-    while (1) {
-        // Wait here forever until the ISR signals the semaphore
-        OSSemPend(ButtonSem, 0, &err);
+// Freeze the game
+void stop_game()
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
 
-        // Now we are in a TASK, so printf is safe!
-        printf("Button Pressed! Edge: 0x%X\n", edge_capture);
+// Toggle between Modes
+void set_mode(unsigned int mode)
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    if (!mode) {
+    	ctrl &= ~MODE_GAME_MSK;
+    } else {
+    	ctrl |= MODE_GAME_MSK;
+    }
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Read ctrl register, clear target and write new data
+void set_target(unsigned int new_target)
+{
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~TARGET_MSK;
+    ctrl |= ((new_target & 0x3FF) << TARGET_START_POS);
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// score = 0 resets the score(lost) or score = 1 to add to current score
+void update_score(int _score)
+{
+	if (!_score) {
+		score = 0;
+	} else {
+		score++;
+	}
+	IOWR_32DIRECT(REG32_AVALON_INTERFACE_0_BASE, 0, score);
+}
+
+void config_task(void* pdata)
+{
+	unsigned int current_settings;
+	unsigned int speed;
+	unsigned int mode;
+	unsigned int start;
+
+
+	while (1)
+	{
+		current_settings = IORD_32DIRECT(PIO_SWITCHES_BASE, 0);
+
+		speed = (current_settings & SW_SPEED_MSK) >> SW_SPEED_POS;
+		mode  = (current_settings & SW_MODE_MSK)  >> SW_MODE_POS;
+		start = (current_settings & SW_START_MSK) >> SW_START_POS;
+
+		unsigned int actual_speed = 5000000 - (speed * 17647);
+
+
+
+	}
+}
+
+void game_task(void *pdata)
+{
+    INT8U err;
+    enum STATE state;
+
+    unsigned int status_val;
+    unsigned int ctrl_val;
+    while (1) {
+
+    	// Check if game is running, if running: check only for KEY(3) as it is a play button
+    	if (state == RUNNING) {
+			// Wait here forever until the ISR signals the semaphore
+			OSSemPend(hit_miss_sem, 0, &err);
+
+
+        	// If play button hit, stop the game and make compare
+        	if (edge_capture == 0x04) {
+        		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+        		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+        		int current = (status_val & 0x3FF);
+        		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
+
+        		if (target == current) {
+        			score++;
+        		} else {
+        			score = 0;
+        		}
+        		OSSemPost(score_update_sem);
+        	}
+		}
+        //printf("Button Pressed! Edge: 0x%X\n", edge_capture);
 
         // You can also read your game status here
-        unsigned int status = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
-        printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
+
+       // printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
     }
 }
 
-void button_isr(void* context) {
+void display_task(void *pdata)
+{
+	INT8U err;
+	while(1)
+	{
+		// wait for semaphore
+		OSSemPend(score_update_sem, 0, &err);
+
+		update_score(score);
+		printf("Score updated! Current score: %d", score);
+	}
+}
+
+void button_isr(void* context)
+{
 	OSIntEnter();
 
     // Read and Clear the edge capture
@@ -111,7 +212,7 @@ void button_isr(void* context) {
     IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
 
     // Signal the task that a button was pressed
-    OSSemPost(ButtonSem);
+    OSSemPost(hit_miss_sem);
 
     OSIntExit();
 }
@@ -120,7 +221,7 @@ int main(void)
 {
     OSInit();
 
-    ButtonSem = OSSemCreate(0);
+    hit_miss_sem = OSSemCreate(0);
 
     IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_BUTTONS_BASE, 0xf);
     IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
@@ -133,23 +234,34 @@ int main(void)
         NULL
     );
 
-    OSTaskCreateExt(control_task,
+    OSTaskCreateExt(game_task,
     				NULL,
-					&controlTaskStk[TASK_STACKSIZE-1],
-					CONTROL_TASK_PRIO,
-					CONTROL_TASK_PRIO,
-					controlTaskStk,
+					&game_task_stk[TASK_STACKSIZE-1],
+					GAME_TASK_PRIO,
+					GAME_TASK_PRIO,
+					game_task_stk,
 					TASK_STACKSIZE,
 					NULL,
 					0
 	);
 
-    OSTaskCreateExt(input_task,
+    OSTaskCreateExt(config_task,
     				NULL,
-					&inputTaskStk[TASK_STACKSIZE-1],
-					INPUT_TASK_PRIO,
-					INPUT_TASK_PRIO,
-					inputTaskStk,
+					&config_task_stk[TASK_STACKSIZE-1],
+					CONFIG_TASK_PRIO,
+					CONFIG_TASK_PRIO,
+					config_task_stk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSTaskCreateExt(display_task_stk,
+    				NULL,
+					&display_task_stk[TASK_STACKSIZE-1],
+					DISPLAY_TASK_PRIO,
+					DISPLAY_TASK_PRIO,
+					display_task_stk,
 					TASK_STACKSIZE,
 					NULL,
 					0

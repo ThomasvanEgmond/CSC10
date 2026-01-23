@@ -1,16 +1,16 @@
-Fitter Status : Successful - Thu Jan 22 15:45:29 2026
+Fitter Status : Successful - Fri Jan 23 11:29:31 2026
 Quartus Prime Version : 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 Revision Name : eindopdracht-nios
 Top-level Entity Name : eindopdracht_nios
 Family : Cyclone V
 Device : 5CSEMA5F31C6
 Timing Models : Final
-Logic utilization (in ALMs) : 1,109 / 32,070 ( 3 % )
-Total registers : 1938
-Total pins : 57 / 457 ( 12 % )
+Logic utilization (in ALMs) : 1,198 / 32,070 ( 4 % )
+Total registers : 1965
+Total pins : 67 / 457 ( 15 % )
 Total virtual pins : 0
-Total block memory bits : 1,059,328 / 4,065,280 ( 26 % )
-Total RAM Blocks : 132 / 397 ( 33 % )
+Total block memory bits : 2,107,904 / 4,065,280 ( 52 % )
+Total RAM Blocks : 260 / 397 ( 65 % )
 Total DSP Blocks : 0 / 87 ( 0 % )
 Total HSSI RX PCSs : 0
 Total HSSI PMA RX Deserializers : 0

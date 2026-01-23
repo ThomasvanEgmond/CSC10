@@ -4,7 +4,7 @@
  * Machine generated for CPU 'nios2_qsys_0' in SOPC Builder design 'reactiespel_system'
  * SOPC Builder design path: ../../reactiespel_system.sopcinfo
  *
- * Generated: Thu Jan 22 12:52:30 CET 2026
+ * Generated: Fri Jan 23 11:30:34 CET 2026
  */
 
 /*
@@ -65,9 +65,9 @@
  *
  */
 
-#define ONCHIP_MEMORY2_0_REGION_BASE 0x40020
-#define ONCHIP_MEMORY2_0_REGION_SPAN 131040
-#define RESET_REGION_BASE 0x40000
+#define ONCHIP_MEMORY2_0_REGION_BASE 0x20
+#define ONCHIP_MEMORY2_0_REGION_SPAN 262112
+#define RESET_REGION_BASE 0x0
 #define RESET_REGION_SPAN 32
 
 

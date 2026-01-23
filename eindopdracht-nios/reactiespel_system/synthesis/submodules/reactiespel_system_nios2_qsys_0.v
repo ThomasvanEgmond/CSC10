@@ -519,12 +519,12 @@ defparam reactiespel_system_nios2_qsys_0_ociram_sp_ram.lpm_file = "reactiespel_s
 //synthesis read_comments_as_HDL on
 //defparam reactiespel_system_nios2_qsys_0_ociram_sp_ram.lpm_file = "reactiespel_system_nios2_qsys_0_ociram_default_contents.mif";
 //synthesis read_comments_as_HDL off
-  assign cfgrom_readdata = (MonAReg[4 : 2] == 3'd0)? 32'h00040020 :
+  assign cfgrom_readdata = (MonAReg[4 : 2] == 3'd0)? 32'h00000020 :
     (MonAReg[4 : 2] == 3'd1)? 32'h00001313 :
     (MonAReg[4 : 2] == 3'd2)? 32'h00040000 :
     (MonAReg[4 : 2] == 3'd3)? 32'h00000100 :
     (MonAReg[4 : 2] == 3'd4)? 32'h20000000 :
-    (MonAReg[4 : 2] == 3'd5)? 32'h00040000 :
+    (MonAReg[4 : 2] == 3'd5)? 32'h00000000 :
     (MonAReg[4 : 2] == 3'd6)? 32'h00000000 :
     32'h00000000;
 
@@ -1503,7 +1503,7 @@ wire             trc_on;
                   else if (is_fast_tlb_miss_exception)
                       pending_exc_handler <= 32'h0;
                   else 
-                    pending_exc_handler <= 32'h40020;
+                    pending_exc_handler <= 32'h20;
                   pending_frametype <= 4'b0000;
                 end
               else if (is_idct)
@@ -4179,8 +4179,8 @@ reg              wait_for_one_post_bret_inst;
     (W_br_taken | R_ctrl_uncond_cti_non_br)   ? 2'b10 :
     2'b11;
 
-  assign F_pc_no_crst_nxt = (F_pc_sel_nxt == 2'b00)? 65544 :
-    (F_pc_sel_nxt == 2'b01)? 1032 :
+  assign F_pc_no_crst_nxt = (F_pc_sel_nxt == 2'b00)? 8 :
+    (F_pc_sel_nxt == 2'b01)? 66056 :
     (F_pc_sel_nxt == 2'b10)? E_arith_result[18 : 2] :
     F_pc_plus_one;
 
@@ -4191,7 +4191,7 @@ reg              wait_for_one_post_bret_inst;
   always @(posedge clk or negedge reset_n)
     begin
       if (reset_n == 0)
-          F_pc <= 65536;
+          F_pc <= 0;
       else if (F_pc_en)
           F_pc <= F_pc_nxt;
     end

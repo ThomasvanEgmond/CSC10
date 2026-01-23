@@ -1,13 +1,13 @@
-Analysis & Synthesis Status : Successful - Thu Jan 22 15:41:20 2026
+Analysis & Synthesis Status : Successful - Fri Jan 23 11:26:09 2026
 Quartus Prime Version : 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 Revision Name : eindopdracht-nios
 Top-level Entity Name : eindopdracht_nios
 Family : Cyclone V
 Logic utilization (in ALMs) : N/A
-Total registers : 1807
-Total pins : 57
+Total registers : 1851
+Total pins : 67
 Total virtual pins : 0
-Total block memory bits : 1,059,328
+Total block memory bits : 2,107,904
 Total DSP Blocks : 0
 Total HSSI RX PCSs : 0
 Total HSSI PMA RX Deserializers : 0

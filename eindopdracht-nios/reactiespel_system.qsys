@@ -29,7 +29,7 @@
    {
       datum baseAddress
       {
-         value = "88";
+         value = "266344";
          type = "String";
       }
    }
@@ -45,7 +45,7 @@
    {
       datum baseAddress
       {
-         value = "4096";
+         value = "264192";
          type = "String";
       }
    }
@@ -59,9 +59,14 @@
    }
    element onchip_memory2_0.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "262144";
+         value = "0";
          type = "String";
       }
    }
@@ -77,7 +82,23 @@
    {
       datum baseAddress
       {
-         value = "16";
+         value = "266288";
+         type = "String";
+      }
+   }
+   element pio_switches
+   {
+      datum _sortIndex
+      {
+         value = "9";
+         type = "int";
+      }
+   }
+   element pio_switches.s1
+   {
+      datum baseAddress
+      {
+         value = "266272";
          type = "String";
       }
    }
@@ -101,7 +122,7 @@
    {
       datum baseAddress
       {
-         value = "64";
+         value = "266320";
          type = "String";
       }
    }
@@ -117,8 +138,13 @@
    {
       datum _lockedAddress
       {
-         value = "1";
+         value = "0";
          type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "266304";
+         type = "String";
       }
    }
    element sysid_qsys_0
@@ -133,7 +159,7 @@
    {
       datum baseAddress
       {
-         value = "80";
+         value = "266336";
          type = "String";
       }
    }
@@ -162,7 +188,7 @@
       }
       datum baseAddress
       {
-         value = "32";
+         value = "266240";
          type = "String";
       }
    }
@@ -204,6 +230,11 @@
    type="conduit"
    dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <interface
+   name="switches"
+   internal="pio_switches.external_connection"
+   type="conduit"
+   dir="end" />
  <module name="clk_0" kind="clock_source" version="18.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
@@ -243,7 +274,7 @@
   <parameter name="cpuReset" value="false" />
   <parameter name="customInstSlavesSystemInfo" value="&lt;info/&gt;" />
   <parameter name="dataAddrWidth" value="19" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='reg32_reaction_game_component_0.avalon_slave_0' start='0x0' end='0x10' /><slave name='pio_buttons.s1' start='0x10' end='0x20' /><slave name='timer_0.s1' start='0x20' end='0x40' /><slave name='reg32_avalon_interface_0.avalon_slave_0' start='0x40' end='0x50' /><slave name='sysid_qsys_0.control_slave' start='0x50' end='0x58' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x58' end='0x60' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x1000' end='0x1800' /><slave name='onchip_memory2_0.s1' start='0x40000' end='0x60000' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x0' end='0x40000' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x40800' end='0x41000' /><slave name='timer_0.s1' start='0x41000' end='0x41020' /><slave name='pio_switches.s1' start='0x41020' end='0x41030' /><slave name='pio_buttons.s1' start='0x41030' end='0x41040' /><slave name='reg32_reaction_game_component_0.avalon_slave_0' start='0x41040' end='0x41050' /><slave name='reg32_avalon_interface_0.avalon_slave_0' start='0x41050' end='0x41060' /><slave name='sysid_qsys_0.control_slave' start='0x41060' end='0x41068' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x41068' end='0x41070' /></address-map>]]></parameter>
   <parameter name="dcache_bursts" value="false" />
   <parameter name="dcache_lineSize" value="32" />
   <parameter name="dcache_numTCDM" value="0" />
@@ -270,7 +301,7 @@
   <parameter name="icache_tagramBlockType" value="Automatic" />
   <parameter name="impl" value="Tiny" />
   <parameter name="instAddrWidth" value="19" />
-  <parameter name="instSlaveMapParam"><![CDATA[<address-map><slave name='nios2_qsys_0.jtag_debug_module' start='0x1000' end='0x1800' /><slave name='onchip_memory2_0.s1' start='0x40000' end='0x60000' /></address-map>]]></parameter>
+  <parameter name="instSlaveMapParam"><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x0' end='0x40000' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x40800' end='0x41000' /></address-map>]]></parameter>
   <parameter name="internalIrqMaskSystemInfo" value="7" />
   <parameter name="manuallyAssignCpuID" value="true" />
   <parameter name="mmu_TLBMissExcOffset" value="0" />
@@ -380,7 +411,7 @@
   <parameter name="initMemContent" value="true" />
   <parameter name="initializationFileName" value="onchip_mem.hex" />
   <parameter name="instanceID" value="NONE" />
-  <parameter name="memorySize" value="131072" />
+  <parameter name="memorySize" value="262144" />
   <parameter name="readDuringWriteMode" value="DONT_CARE" />
   <parameter name="resetrequest_enabled" value="true" />
   <parameter name="simAllowMRAMContentsFile" value="false" />
@@ -408,7 +439,25 @@
   <parameter name="resetValue" value="0" />
   <parameter name="simDoTestBenchWiring" value="false" />
   <parameter name="simDrivenValue" value="0" />
-  <parameter name="width" value="3" />
+  <parameter name="width" value="1" />
+ </module>
+ <module
+   name="pio_switches"
+   kind="altera_avalon_pio"
+   version="18.1"
+   enabled="1">
+  <parameter name="bitClearingEdgeCapReg" value="false" />
+  <parameter name="bitModifyingOutReg" value="false" />
+  <parameter name="captureEdge" value="true" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="direction" value="Input" />
+  <parameter name="edgeType" value="ANY" />
+  <parameter name="generateIRQ" value="false" />
+  <parameter name="irqType" value="LEVEL" />
+  <parameter name="resetValue" value="0" />
+  <parameter name="simDoTestBenchWiring" value="false" />
+  <parameter name="simDrivenValue" value="0" />
+  <parameter name="width" value="10" />
  </module>
  <module
    name="reg32_avalon_interface_0"
@@ -445,7 +494,7 @@
    start="nios2_qsys_0.data_master"
    end="jtag_uart_0.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0058" />
+  <parameter name="baseAddress" value="0x00041068" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -454,7 +503,7 @@
    start="nios2_qsys_0.data_master"
    end="reg32_avalon_interface_0.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0040" />
+  <parameter name="baseAddress" value="0x00041050" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -463,7 +512,7 @@
    start="nios2_qsys_0.data_master"
    end="reg32_reaction_game_component_0.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="baseAddress" value="0x00041040" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -472,7 +521,7 @@
    start="nios2_qsys_0.data_master"
    end="sysid_qsys_0.control_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0050" />
+  <parameter name="baseAddress" value="0x00041060" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -481,7 +530,7 @@
    start="nios2_qsys_0.data_master"
    end="nios2_qsys_0.jtag_debug_module">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x1000" />
+  <parameter name="baseAddress" value="0x00040800" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -490,7 +539,7 @@
    start="nios2_qsys_0.data_master"
    end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x00040000" />
+  <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -499,7 +548,7 @@
    start="nios2_qsys_0.data_master"
    end="timer_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0020" />
+  <parameter name="baseAddress" value="0x00041000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -508,7 +557,16 @@
    start="nios2_qsys_0.data_master"
    end="pio_buttons.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0010" />
+  <parameter name="baseAddress" value="0x00041030" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="18.1"
+   start="nios2_qsys_0.data_master"
+   end="pio_switches.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x00041020" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -517,7 +575,7 @@
    start="nios2_qsys_0.instruction_master"
    end="nios2_qsys_0.jtag_debug_module">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x1000" />
+  <parameter name="baseAddress" value="0x00040800" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -526,7 +584,7 @@
    start="nios2_qsys_0.instruction_master"
    end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x00040000" />
+  <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection kind="clock" version="18.1" start="clk_0.clk" end="nios2_qsys_0.clk" />
@@ -534,6 +592,7 @@
  <connection kind="clock" version="18.1" start="clk_0.clk" end="sysid_qsys_0.clk" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="timer_0.clk" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="pio_buttons.clk" />
+ <connection kind="clock" version="18.1" start="clk_0.clk" end="pio_switches.clk" />
  <connection
    kind="clock"
    version="18.1"
@@ -600,6 +659,11 @@
    version="18.1"
    start="clk_0.clk_reset"
    end="pio_buttons.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
+   end="pio_switches.reset" />
  <connection
    kind="reset"
    version="18.1"

@@ -1,0 +1,223 @@
+/*************************************************************************
+* Copyright (c) 2004 Altera Corporation, San Jose, California, USA.      *
+* All rights reserved. All use of this software and documentation is     *
+* subject to the License Agreement located at the end of this file below.*
+**************************************************************************
+* Description:                                                           *
+* The following is a simple hello world program running MicroC/OS-II.The *
+* purpose of the design is to be a very simple application that just     *
+* demonstrates MicroC/OS-II running on NIOS II.The design doesn't account*
+* for issues such as checking system call return codes. etc.             *
+*                                                                        *
+* Requirements:                                                          *
+*   -Supported Example Hardware Platforms                                *
+*     Standard                                                           *
+*     Full Featured                                                      *
+*     Low Cost                                                           *
+*   -Supported Development Boards                                        *
+*     Nios II Development Board, Stratix II Edition                      *
+*     Nios Development Board, Stratix Professional Edition               *
+*     Nios Development Board, Stratix Edition                            *
+*     Nios Development Board, Cyclone Edition                            *
+*   -System Library Settings                                             *
+*     RTOS Type - MicroC/OS-II                                           *
+*     Periodic System Timer                                              *
+*   -Know Issues                                                         *
+*     If this design is run on the ISS, terminal output will take several*
+*     minutes per iteration.                                             *
+**************************************************************************/
+
+#include <stdio.h>
+#include <system.h>                  // Voor alle BSP-definities (zoals base addresses en IRQs)
+#include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
+#include <io.h>
+#include "includes.h"
+#include <stdio.h>
+#include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
+#include <altera_avalon_pio_regs.h>
+
+/* Register Offsets */
+#define OFFSET_CTRL         0
+#define OFFSET_SPEED        4
+#define OFFSET_STATUS       8
+
+/* CTRL Register Mask & Bit Positions */
+#define ENABLE_GAME_POS     (0U)
+#define ENABLE_GAME_MSK     (1U << ENABLE_GAME_POS)   		// Bit 0
+
+#define MODE_GAME_POS       (1U)
+#define MODE_GAME_MSK       (1U << MODE_GAME_POS)     		// Bit 1 (0 = Ping-Pong, 1 = Circular)
+
+#define TARGET_START_POS    (8U)
+#define TARGET_MSK          (0x3FFU << TARGET_START_POS) 	// Bits 8-17
+
+/* STATUS Register Mask (LEDs 0-9) */
+#define CURRENT_POS_MSK     (0x3FFU)                  		// Bits 0-9
+
+#define TASK_STACKSIZE      532
+#define CONTROL_TASK_PRIO 	10
+#define INPUT_TASK_PRIO		5
+
+OS_STK    controlTaskStk[TASK_STACKSIZE];
+OS_STK	  inputTaskStk[TASK_STACKSIZE];
+
+OS_EVENT *ButtonSem;
+
+volatile int edge_capture;
+
+enum STATE {
+	RUNNING, STOPPED
+};
+
+// Turn the game ON
+void start_game() {
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl |= ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Freeze the game
+void stop_game() {
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~ENABLE_GAME_MSK;
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Toggle between Modes
+void set_mode(unsigned int mode) {
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    if (!mode) {
+    	ctrl &= ~MODE_GAME_MSK;
+    } else {
+    	ctrl |= MODE_GAME_MSK;
+    }
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+// Read ctrl register, clear target and write new data
+void set_target(unsigned int new_target) {
+    unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+    ctrl &= ~TARGET_MSK;
+    ctrl |= ((new_target & 0x3FF) << TARGET_START_POS);
+    IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
+}
+
+void control_task(void* pdata)
+{
+	printf("Testing all IO's\n");
+	unsigned int status_val;
+	unsigned int speed_val;
+	unsigned int ctrl_val;
+
+	IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED, 25000000);
+
+	set_target(4);
+	set_mode(0);
+	start_game();
+
+
+
+
+	while (1)
+	{
+		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+		//speed_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_SPEED);
+		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+		OSTimeDlyHMSM(0,0,1,0);
+		//printf("Current CTRL:   0x%08X\n", ctrl_val);
+		printf("Current status: 0x%08X\n", status_val);
+		//printf("Current speed:  0x%08X\n", speed_val);
+
+  }
+}
+
+void input_task(void *pdata) {
+    INT8U err;
+    enum STATE state;
+
+    unsigned int status_val;
+    unsigned int ctrl_val;
+    while (1) {
+        // Wait here forever until the ISR signals the semaphore
+        OSSemPend(ButtonSem, 0, &err);
+
+        // Check if game is running, if running: check only for KEY(3) as it is a play button
+        if (state == RUNNING) {
+        	// If play button hit, stop the game and make compare
+        	if (edge_capture == 0x04) {
+        		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
+        		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
+        		int current = (status_val & 0x3FF);
+        		int target = (ctrl_val & MASK_TARGET) >> SHIFT_TARGET;
+
+        		if (target == current) {
+        			printf("Hit!!!");
+        		} else {
+        			printf("Miss!!!");
+        		}
+        	}
+        }
+        printf("Button Pressed! Edge: 0x%X\n", edge_capture);
+
+        // You can also read your game status here
+
+       // printf("Current LED Pos: %d\n", (status >> 16) & 0x3FF);
+    }
+}
+
+void button_isr(void* context) {
+	OSIntEnter();
+
+    // Read and Clear the edge capture
+    edge_capture = IORD_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
+
+    // Signal the task that a button was pressed
+    OSSemPost(ButtonSem);
+
+    OSIntExit();
+}
+
+int main(void)
+{
+    OSInit();
+
+    ButtonSem = OSSemCreate(0);
+
+    IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_BUTTONS_BASE, 0xf);
+    IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_BUTTONS_BASE, 0x0);
+
+    alt_ic_isr_register(
+        PIO_BUTTONS_IRQ_INTERRUPT_CONTROLLER_ID,
+        PIO_BUTTONS_IRQ,
+        button_isr,
+        NULL,
+        NULL
+    );
+
+    OSTaskCreateExt(control_task,
+    				NULL,
+					&controlTaskStk[TASK_STACKSIZE-1],
+					CONTROL_TASK_PRIO,
+					CONTROL_TASK_PRIO,
+					controlTaskStk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSTaskCreateExt(input_task,
+    				NULL,
+					&inputTaskStk[TASK_STACKSIZE-1],
+					INPUT_TASK_PRIO,
+					INPUT_TASK_PRIO,
+					inputTaskStk,
+					TASK_STACKSIZE,
+					NULL,
+					0
+	);
+
+    OSStart();
+    return 0;
+}
+

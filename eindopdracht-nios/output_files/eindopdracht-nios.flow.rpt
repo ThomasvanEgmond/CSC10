@@ -1,5 +1,5 @@
 Flow report for eindopdracht-nios
-Thu Jan 22 15:45:57 2026
+Fri Jan 23 11:29:56 2026
 Quartus Prime Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 
 
@@ -40,18 +40,18 @@ refer to the applicable agreement for further details.
 +-------------------------------------------------------------------------------+
 ; Flow Summary                                                                  ;
 +---------------------------------+---------------------------------------------+
-; Flow Status                     ; Successful - Thu Jan 22 15:45:45 2026       ;
+; Flow Status                     ; Successful - Fri Jan 23 11:29:44 2026       ;
 ; Quartus Prime Version           ; 18.1.0 Build 625 09/12/2018 SJ Lite Edition ;
 ; Revision Name                   ; eindopdracht-nios                           ;
 ; Top-level Entity Name           ; eindopdracht_nios                           ;
 ; Family                          ; Cyclone V                                   ;
 ; Device                          ; 5CSEMA5F31C6                                ;
 ; Timing Models                   ; Final                                       ;
-; Logic utilization (in ALMs)     ; 1,109 / 32,070 ( 3 % )                      ;
-; Total registers                 ; 1938                                        ;
-; Total pins                      ; 57 / 457 ( 12 % )                           ;
+; Logic utilization (in ALMs)     ; 1,198 / 32,070 ( 4 % )                      ;
+; Total registers                 ; 1965                                        ;
+; Total pins                      ; 67 / 457 ( 15 % )                           ;
 ; Total virtual pins              ; 0                                           ;
-; Total block memory bits         ; 1,059,328 / 4,065,280 ( 26 % )              ;
+; Total block memory bits         ; 2,107,904 / 4,065,280 ( 52 % )              ;
 ; Total DSP Blocks                ; 0 / 87 ( 0 % )                              ;
 ; Total HSSI RX PCSs              ; 0                                           ;
 ; Total HSSI PMA RX Deserializers ; 0                                           ;
@@ -67,7 +67,7 @@ refer to the applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 01/22/2026 15:40:32 ;
+; Start date & time ; 01/23/2026 11:25:19 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; eindopdracht-nios   ;
 +-------------------+---------------------+
@@ -78,7 +78,7 @@ refer to the applicable agreement for further details.
 +-------------------------------------+----------------------------------------------------------------------+-------------------+--------------------+------------+
 ; Assignment Name                     ; Value                                                                ; Default Value     ; Entity Name        ; Section Id ;
 +-------------------------------------+----------------------------------------------------------------------+-------------------+--------------------+------------+
-; COMPILER_SIGNATURE_ID               ; 24580036551715.176909283109064                                       ; --                ; --                 ; --         ;
+; COMPILER_SIGNATURE_ID               ; 24580036551715.176916391909376                                       ; --                ; --                 ; --         ;
 ; MAX_CORE_JUNCTION_TEMP              ; 85                                                                   ; --                ; --                 ; --         ;
 ; MIN_CORE_JUNCTION_TEMP              ; 0                                                                    ; --                ; --                 ; --         ;
 ; MISC_FILE                           ; reactiespel_system/synthesis/../reactiespel_system.cmp               ; --                ; --                 ; --         ;
@@ -91,7 +91,7 @@ refer to the applicable agreement for further details.
 ; PROJECT_OUTPUT_DIRECTORY            ; output_files                                                         ; --                ; --                 ; --         ;
 ; SLD_FILE                            ; reactiespel_system/synthesis/reactiespel_system.regmap               ; --                ; --                 ; --         ;
 ; SLD_FILE                            ; reactiespel_system/synthesis/reactiespel_system.debuginfo            ; --                ; --                 ; --         ;
-; SLD_INFO                            ; QSYS_NAME reactiespel_system HAS_SOPCINFO 1 GENERATION_ID 1769092752 ; --                ; reactiespel_system ; --         ;
+; SLD_INFO                            ; QSYS_NAME reactiespel_system HAS_SOPCINFO 1 GENERATION_ID 1769163871 ; --                ; reactiespel_system ; --         ;
 ; SOPCINFO_FILE                       ; reactiespel_system/synthesis/../../reactiespel_system.sopcinfo       ; --                ; --                 ; --         ;
 ; SYNTHESIS_ONLY_QIP                  ; On                                                                   ; --                ; --                 ; --         ;
 ; TOP_LEVEL_ENTITY                    ; eindopdracht_nios                                                    ; eindopdracht-nios ; --                 ; --         ;
@@ -103,11 +103,11 @@ refer to the applicable agreement for further details.
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name          ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis ; 00:00:47     ; 1.0                     ; 5084 MB             ; 00:01:11                           ;
-; Fitter               ; 00:04:07     ; 1.1                     ; 7873 MB             ; 00:27:24                           ;
-; Assembler            ; 00:00:13     ; 1.0                     ; 4884 MB             ; 00:00:09                           ;
-; Timing Analyzer      ; 00:00:11     ; 3.5                     ; 5377 MB             ; 00:00:27                           ;
-; Total                ; 00:05:18     ; --                      ; --                  ; 00:29:11                           ;
+; Analysis & Synthesis ; 00:00:47     ; 1.0                     ; 5091 MB             ; 00:01:16                           ;
+; Fitter               ; 00:03:21     ; 1.2                     ; 7871 MB             ; 00:21:38                           ;
+; Assembler            ; 00:00:10     ; 1.0                     ; 4897 MB             ; 00:00:10                           ;
+; Timing Analyzer      ; 00:00:11     ; 4.2                     ; 5395 MB             ; 00:00:33                           ;
+; Total                ; 00:04:29     ; --                      ; --                  ; 00:23:37                           ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 
