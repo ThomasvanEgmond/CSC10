@@ -4,14 +4,8 @@ USE ieee.std_logic_1164.ALL;
 ENTITY hps_demo IS
     PORT (
         CLOCK_50 : IN STD_LOGIC;
-        
-        -- AANGEPAST: 4 Keys voor de buttons_pio
         KEY      : IN STD_LOGIC_VECTOR(3 DOWNTO 0); 
-        
-        -- AANGEPAST: 10 Switches (standaard DE1-SoC)
         SW       : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
-        
-        -- AANGEPAST: 10 LEDs voor de moving_led component
         LEDR     : OUT STD_LOGIC_VECTOR(9 DOWNTO 0);
 		
 		HEX0 : OUT STD_LOGIC_VECTOR(6 DOWNTO 0);
@@ -21,7 +15,6 @@ ENTITY hps_demo IS
 		HEX4 : OUT STD_LOGIC_VECTOR(6 DOWNTO 0);
 		HEX5 : OUT STD_LOGIC_VECTOR(6 DOWNTO 0);
 		
-        -- HPS DDR3 en I/O (Standaard, ongewijzigd)
         memory_mem_a                    : OUT   STD_LOGIC_VECTOR(14 DOWNTO 0);
         memory_mem_ba                   : OUT   STD_LOGIC_VECTOR(2 DOWNTO 0);
         memory_mem_ck                   : OUT   STD_LOGIC;
@@ -94,7 +87,6 @@ END hps_demo;
 
 ARCHITECTURE Structure OF hps_demo IS
     
-    -- JOUW NIEUWE COMPONENT DEFINITIE (uit de template)
     component hps_systeem is
         port (
             buttons_export                           : in    std_logic_vector(2 downto 0)  := (others => 'X'); -- export
@@ -176,13 +168,12 @@ ARCHITECTURE Structure OF hps_demo IS
 BEGIN
     u0 : COMPONENT hps_systeem
         PORT MAP(
-            -- FYSIEKE VERBINDINGEN MAKEN
             clk_clk                         => CLOCK_50,
-            reset_reset_n                   => KEY(0), -- Reset het systeem. Gebruik KEY(1-3) voor spelinput!
+            reset_reset_n                   => KEY(0),
             buttons_export(2)               => KEY(3),
 			buttons_export(1)               => KEY(2),
-			buttons_export(0)               => KEY(1),    -- Verbind de 4 keys met de PIO
-            leds_export                     => LEDR,   -- Verbind de 10 LEDs met de VHDL module
+			buttons_export(0)               => KEY(1),
+            leds_export                     => LEDR,
             
 			a_7_segment_encoder_0_conduit_end_export(6 downto 0) => HEX0,
 			a_7_segment_encoder_0_conduit_end_export(13 downto 7) => HEX1,
@@ -192,7 +183,6 @@ BEGIN
 			a_7_segment_encoder_0_conduit_end_export(41 downto 35) => HEX5,
 			switches_export                          => SW,
 			
-            -- HPS CONNECTIES (1-op-1 overgenomen)
             hps_io_hps_io_emac1_inst_TX_CLK => hps_io_hps_io_emac1_inst_TX_CLK,
             hps_io_hps_io_emac1_inst_TXD0   => hps_io_hps_io_emac1_inst_TXD0,
             hps_io_hps_io_emac1_inst_TXD1   => hps_io_hps_io_emac1_inst_TXD1,
