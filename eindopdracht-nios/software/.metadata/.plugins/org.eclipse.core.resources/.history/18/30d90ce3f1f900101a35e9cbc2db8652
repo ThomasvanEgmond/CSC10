@@ -189,7 +189,6 @@ void game_task(void *pdata)
         		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
         		int current = (status_val & CURRENT_POS_MSK);
         		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
-        		// It was a hit, so score + 1
         		if ((1 << current) & target) {
         			score++;
         		}
@@ -278,3 +277,4 @@ int main(void)
     OSStart();
     return 0;
 }
+

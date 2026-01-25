@@ -7,8 +7,8 @@
    <irq preferredWidth="34" />
   </columns>
  </systemtable>
- <library expandedCategories="Library,Project" />
- <window width="1938" height="1038" x="-9" y="-9" />
+ <library expandedCategories="Project,Library,Project/My Own IP Cores" />
+ <window width="2418" height="1308" x="2391" y="-9" />
  <generation synthesis="VHDL" block_symbol_file="0" />
  <hdlexample language="VHDL" />
 </preferences>

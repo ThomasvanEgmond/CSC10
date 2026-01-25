@@ -29,11 +29,13 @@
 
 #include <stdio.h>
 #include <system.h>                  // Voor alle BSP-definities (zoals base addresses en IRQs)
+#include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
 #include <io.h>
 #include "includes.h"
 #include <stdio.h>
 #include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
 #include <altera_avalon_pio_regs.h>
+#include <stdbool.h>
 
 /* Register Offsets */
 #define OFFSET_CTRL         0
@@ -103,7 +105,7 @@ void stop_game()
     IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
 }
 
-// Toggle between modes
+// Toggle between Modes
 void set_mode(unsigned int mode)
 {
     unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
@@ -189,9 +191,10 @@ void game_task(void *pdata)
         		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
         		int current = (status_val & CURRENT_POS_MSK);
         		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
-        		// It was a hit, so score + 1
         		if ((1 << current) & target) {
         			score++;
+        		} else {
+        			score = 0;
         		}
         		OSSemPost(score_update_sem);
         	}
@@ -278,3 +281,4 @@ int main(void)
     OSStart();
     return 0;
 }
+

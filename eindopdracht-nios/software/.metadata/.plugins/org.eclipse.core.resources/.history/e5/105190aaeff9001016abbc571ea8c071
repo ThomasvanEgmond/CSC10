@@ -29,11 +29,13 @@
 
 #include <stdio.h>
 #include <system.h>                  // Voor alle BSP-definities (zoals base addresses en IRQs)
+#include <altera_avalon_timer_regs.h> // Voor de timer-registerdefinities
 #include <io.h>
 #include "includes.h"
 #include <stdio.h>
 #include <sys/alt_irq.h>             // Voor de interrupt registratie functie (alt_ic_isr_register)
 #include <altera_avalon_pio_regs.h>
+#include <stdbool.h>
 
 /* Register Offsets */
 #define OFFSET_CTRL         0
@@ -103,7 +105,7 @@ void stop_game()
     IOWR_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL, ctrl);
 }
 
-// Toggle between modes
+// Toggle between Modes
 void set_mode(unsigned int mode)
 {
     unsigned int ctrl = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
@@ -126,7 +128,7 @@ void set_target(unsigned int new_target)
 
 void config_task(void* pdata)
 {
-	set_target((1 << 4) | (1 << 5));
+    set_target(0);
     unsigned int last_settings = 0; // Better name for clarity
 
     while (1)
@@ -187,11 +189,13 @@ void game_task(void *pdata)
         	if (edge_capture == 0x01) {
         		status_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_STATUS);
         		ctrl_val = IORD_32DIRECT(REG32_REACTION_GAME_COMPONENT_0_BASE, OFFSET_CTRL);
-        		int current = (status_val & CURRENT_POS_MSK);
+        		int current = (status_val & 0x3FF);
         		int target = (ctrl_val & TARGET_MSK) >> TARGET_START_POS;
-        		// It was a hit, so score + 1
-        		if ((1 << current) & target) {
+        		printf("Current: %d, target was %d\r\n", (1 << current), target);
+        		if ((1 << current_pos) & target_pattern) {
         			score++;
+        		} else {
+        			score = 0;
         		}
         		OSSemPost(score_update_sem);
         	}
@@ -278,3 +282,4 @@ int main(void)
     OSStart();
     return 0;
 }
+
